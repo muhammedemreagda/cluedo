@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cluedo — Yazma Kağıdı</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAF9F7;
+    --surface: #FFFFFF;
+    --surface2: #F3F2EF;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.2);
+    --text: #1A1A1A;
+    --text2: #666;
+    --text3: #999;
+    --accent: #2C1A4A;
+    --radius: 8px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141414;
+      --surface: #1E1E1E;
+      --surface2: #282828;
+      --border: rgba(255,255,255,0.10);
+      --border2: rgba(255,255,255,0.18);
+      --text: #F0EEE8;
+      --text2: #999;
+      --text3: #666;
+      --accent: #C9B8F0;
+    }
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding: 24px 16px 48px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .page { max-width: 660px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 24px; }
+  header h1 {
+    font-size: 28px; font-weight: 700; letter-spacing: 4px;
+    color: var(--accent); text-transform: uppercase;
+  }
+
+  .players-bar {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .players-head {
+    padding: 8px 12px; font-size: 11px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--text2); background: var(--surface2);
+    border-bottom: 0.5px solid var(--border);
+  }
+  .players-inputs {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px; padding: 10px 12px;
+  }
+  .players-inputs input {
+    width: 100%; min-width: 0; font-family: inherit;
+    font-size: 12px; text-align: center; padding: 7px 4px;
+    border: 0.5px solid var(--border2); border-radius: 6px;
+    background: var(--bg); color: var(--text); outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  .players-inputs input:focus { border-color: var(--accent); }
+  .players-inputs input::placeholder { color: var(--text3); }
+
+  @media (max-width: 480px) {
+    .players-inputs { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .section {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+  }
+  .section-head {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    font-size: 11px; font-weight: 600; letter-spacing: 1px;
+    text-transform: uppercase; border-bottom: 0.5px solid var(--border);
+  }
+  .suspects .section-head { background: #FBF0F4; color: #6B1D38; border-color: #EDCAD6; }
+  .weapons  .section-head { background: #EFF5FC; color: #0F3E6E; border-color: #BFCFE8; }
+  .rooms    .section-head { background: #EEF6E8; color: #234D13; border-color: #BDD9A8; }
+  @media (prefers-color-scheme: dark) {
+    .suspects .section-head { background: #2A0F1C; color: #ECA8C0; border-color: #4D1C30; }
+    .weapons  .section-head { background: #091929; color: #93BDE8; border-color: #163354; }
+    .rooms    .section-head { background: #0E1F07; color: #9ED478; border-color: #1D3E0F; }
+  }
+
+  .col-header-row {
+    display: grid;
+    grid-template-columns: 1fr repeat(6, 36px);
+    padding: 4px 12px; align-items: center;
+    background: var(--surface2); border-bottom: 0.5px solid var(--border); gap: 4px;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr repeat(6, 36px);
+    padding: 4px 12px; align-items: center;
+    border-bottom: 0.5px solid var(--border);
+    transition: background 0.1s; gap: 4px; position: relative;
+  }
+  .row:last-child { border-bottom: none; }
+  .row.struck { opacity: 0.55; }
+  .row.struck .item-name { text-decoration: line-through; color: var(--text3); }
+
+  .item-inner { display: flex; align-items: center; overflow: hidden; }
+
+  .suspect-color {
+    display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+    margin-right: 7px; flex-shrink: 0; border: 0.5px solid rgba(0,0,0,0.18);
+  }
+
+  /* iOS için button olarak render - tıklama garantili */
+  .item-name {
+    font-size: 13px; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    cursor: pointer; padding: 5px 0;
+    background: none; border: none; font-family: inherit;
+    text-align: left; width: 100%;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .col-label {
+    font-size: 10px; font-weight: 600; color: var(--text);
+    text-align: center; padding: 2px 1px; border-radius: 3px;
+    min-height: 20px; min-width: 0; width: 100%;
+    border: none; background: transparent; outline: none;
+    font-family: inherit; cursor: text;
+    -webkit-appearance: none;
+  }
+  .col-label::placeholder { color: var(--text3); }
+  .col-label:focus { background: var(--bg); }
+
+  /* iOS için cell button olarak */
+  .cell {
+    width: 28px; height: 26px; border-radius: 5px;
+    border: 0.5px solid var(--border2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; margin: 0 auto;
+    background: var(--surface);
+    transition: background 0.1s, transform 0.08s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    /* button reset */
+    font-family: inherit; padding: 0;
+  }
+  .cell:active { transform: scale(0.88); }
+  .cell.check { background: #DCEFD5; color: #2A6614; border-color: #8FC97A; }
+  .cell.cross  { background: #FAE0E0; color: #8B2020; border-color: #E09090; }
+  .cell.maybe  { background: #FEF0D0; color: #7A4D08; border-color: #E8BF6A; }
+  @media (prefers-color-scheme: dark) {
+    .cell.check { background: #1A3D10; color: #8FD46A; border-color: #3A6C25; }
+    .cell.cross  { background: #3D1010; color: #E08080; border-color: #6C2525; }
+    .cell.maybe  { background: #3D2A08; color: #F5C060; border-color: #6C4D15; }
+  }
+
+  .legend {
+    display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;
+    margin: 12px 0; padding: 10px 12px; background: var(--surface);
+    border: 0.5px solid var(--border); border-radius: var(--radius);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); }
+  .legend-cell {
+    width: 20px; height: 20px; border-radius: 4px; border: 0.5px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; background: var(--surface2);
+  }
+
+  .notes-section {
+    margin-top: 12px; background: var(--surface);
+    border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden;
+  }
+  .notes-header {
+    padding: 7px 12px; font-size: 11px; font-weight: 600; letter-spacing: 0.8px;
+    text-transform: uppercase; color: var(--text3);
+    background: var(--surface2); border-bottom: 0.5px solid var(--border);
+  }
+  textarea {
+    display: block; width: 100%; padding: 10px 12px; font-size: 13px;
+    font-family: inherit; border: none; background: transparent;
+    color: var(--text); resize: vertical; min-height: 80px; outline: none; line-height: 1.6;
+    -webkit-appearance: none;
+  }
+  textarea::placeholder { color: var(--text3); }
+
+  .reset-btn {
+    display: block; width: 100%; margin-top: 12px; padding: 9px;
+    background: transparent; border: 0.5px solid var(--border2);
+    border-radius: var(--radius); color: var(--text3); font-size: 12px;
+    font-family: inherit; cursor: pointer; transition: background 0.15s, color 0.15s;
+    letter-spacing: 0.5px; touch-action: manipulation;
+  }
+  .reset-btn:active { background: var(--surface); color: var(--text2); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>Cluedo</h1>
+  </header>
+
+  <div class="players-bar">
+    <div class="players-head">👥 Oyuncular</div>
+    <div class="players-inputs" id="playersInputs"></div>
+  </div>
+
+  <div id="container"></div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-cell check">✓</div>bende var / gördüm</div>
+    <div class="legend-item"><div class="legend-cell cross">✗</div>yok / elendi</div>
+    <div class="legend-item"><div class="legend-cell maybe">?</div>belirsiz</div>
+    <div class="legend-item"><div class="legend-cell"></div>işaretlenmedi</div>
+    <div class="legend-item"><span style="font-size:12px;text-decoration:line-through;color:var(--text3)">İsim</span>kesin değil</div>
+  </div>
+
+  <div class="notes-section">
+    <div class="notes-header">📝 notlar</div>
+    <textarea placeholder="İpuçları, tahminler, hangi oyuncuda ne var..."></textarea>
+  </div>
+
+  <button class="reset-btn" onclick="resetAll()">↺ tüm işaretleri ve çizgileri sıfırla</button>
+
+</div>
+
+<script>
+const SECTIONS = [
+  {
+    key: 'suspects', label: '🔴 Şüpheliler', cls: 'suspects',
+    items: [
+      { name: 'Bayan Scarlett', color: '#DC2626' },
+      { name: 'Albay Mustard',  color: '#D97706' },
+      { name: 'Bayan Beyaz',    color: '#D1D5DB' },
+      { name: 'Rahip Green',    color: '#16A34A' },
+      { name: 'Bayan Peacock',  color: '#1D4ED8' },
+      { name: 'Profesör Plum',  color: '#9333EA' }
+    ]
+  },
+  {
+    key: 'weapons', label: '🔵 Silahlar', cls: 'weapons',
+    items: [
+      { name: 'Boru' }, { name: 'Bıçak' }, { name: 'Şamdan' },
+      { name: 'Tabanca' }, { name: 'İp' }, { name: 'İngiliz Anahtarı' }
+    ]
+  },
+  {
+    key: 'rooms', label: '🟢 Odalar', cls: 'rooms',
+    items: [
+      { name: 'Kış Bahçesi' }, { name: 'Balo Salonu' }, { name: 'Mutfak' },
+      { name: 'Yemek Odası' }, { name: 'Salon' }, { name: 'Hol' },
+      { name: 'Çalışma Odası' }, { name: 'Kütüphane' }, { name: 'Bilardo Odası' }
+    ]
+  }
+];
+
+const COLS = 6;
+const CYCLE = ['', 'check', 'cross', 'maybe'];
+const SYMBOLS = { '': '', check: '✓', cross: '✗', maybe: '?' };
+let state = {};
+let struck = {};
+let playerNames = ['', '', '', '', '', ''];
+
+function cellId(sec, row, col) { return sec + '-' + row + '-' + col; }
+function struckId(sec, row) { return 'struck-' + sec + '-' + row; }
+
+function syncPlayerName(col, value) {
+  playerNames[col] = value;
+  document.querySelectorAll('input.col-label[data-col="' + col + '"]').forEach(function(el) {
+    el.value = value;
+  });
+}
+
+function toggleCell(sec, row, col) {
+  var id = cellId(sec, row, col);
+  var cur = CYCLE.indexOf(state[id] || '');
+  state[id] = CYCLE[(cur + 1) % CYCLE.length];
+  var el = document.getElementById(id);
+  var s = state[id];
+  el.className = 'cell' + (s ? ' ' + s : '');
+  el.textContent = SYMBOLS[s];
+}
+
+function toggleStruck(sec, row) {
+  var id = struckId(sec, row);
+  struck[id] = !struck[id];
+  var rowEl = document.getElementById('row-' + sec + '-' + row);
+  if (struck[id]) rowEl.classList.add('struck');
+  else rowEl.classList.remove('struck');
+}
+
+function addTap(el, fn) {
+  var moved = false;
+  el.addEventListener('touchstart', function() { moved = false; }, { passive: true });
+  el.addEventListener('touchmove', function() { moved = true; }, { passive: true });
+  el.addEventListener('touchend', function(e) {
+    if (!moved) { e.preventDefault(); fn(); }
+  });
+  el.addEventListener('click', fn);
+}
+
+function resetAll() {
+  if (!confirm('Tüm işaretler ve çizgiler silinecek. Emin misin?')) return;
+  state = {}; struck = {};
+  SECTIONS.forEach(function(sec) {
+    sec.items.forEach(function(_, r) {
+      var rowEl = document.getElementById('row-' + sec.key + '-' + r);
+      if (rowEl) rowEl.classList.remove('struck');
+      for (var c = 0; c < COLS; c++) {
+        var el = document.getElementById(cellId(sec.key, r, c));
+        if (el) { el.className = 'cell'; el.textContent = ''; }
+      }
+    });
+  });
+}
+
+function buildPlayersBar() {
+  var bar = document.getElementById('playersInputs');
+  for (var c = 0; c < COLS; c++) {
+    (function(col) {
+      var inp = document.createElement('input');
+      inp.type = 'text';
+      inp.setAttribute('data-col', col);
+      inp.placeholder = 'Oyuncu ' + (col + 1);
+      inp.spellcheck = false;
+      inp.value = playerNames[col] || '';
+      inp.addEventListener('input', function(e) { syncPlayerName(col, e.target.value); });
+      bar.appendChild(inp);
+    })(c);
+  }
+}
+
+function buildSection(sec) {
+  var wrap = document.createElement('div');
+  wrap.className = 'section ' + sec.cls;
+
+  var head = document.createElement('div');
+  head.className = 'section-head';
+  head.textContent = sec.label;
+  wrap.appendChild(head);
+
+  var colHdr = document.createElement('div');
+  colHdr.className = 'col-header-row';
+  colHdr.appendChild(document.createElement('span'));
+  for (var c = 0; c < COLS; c++) {
+    (function(col) {
+      var inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'col-label';
+      inp.setAttribute('data-col', col);
+      inp.placeholder = 'P' + (col + 1);
+      inp.value = playerNames[col] || '';
+      inp.spellcheck = false;
+      inp.addEventListener('input', function(e) { syncPlayerName(col, e.target.value); });
+      colHdr.appendChild(inp);
+    })(c);
+  }
+  wrap.appendChild(colHdr);
+
+  sec.items.forEach(function(item, r) {
+    var row = document.createElement('div');
+    row.className = 'row';
+    row.id = 'row-' + sec.key + '-' + r;
+
+    var nameWrap = document.createElement('div');
+    nameWrap.className = 'item-inner';
+
+    if (item.color) {
+      var dot = document.createElement('span');
+      dot.className = 'suspect-color';
+      dot.style.background = item.color;
+      nameWrap.appendChild(dot);
+    }
+
+    var btn = document.createElement('button');
+    btn.className = 'item-name';
+    btn.textContent = item.name;
+    btn.type = 'button';
+    (function(secKey, row) {
+      addTap(btn, function() { toggleStruck(secKey, row); });
+    })(sec.key, r);
+    nameWrap.appendChild(btn);
+    row.appendChild(nameWrap);
+
+    for (var c = 0; c < COLS; c++) {
+      (function(col) {
+        var cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'cell';
+        cell.id = cellId(sec.key, r, col);
+        addTap(cell, function() { toggleCell(sec.key, r, col); });
+        row.appendChild(cell);
+      })(c);
+    }
+    wrap.appendChild(row);
+  });
+
+  return wrap;
+}
+
+buildPlayersBar();
+var container = document.getElementById('container');
+SECTIONS.forEach(function(sec) { container.appendChild(buildSection(sec)); });
+</script>
+</body>
+</html>
