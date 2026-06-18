@@ -18,3 +18,6 @@ Kullanım
 3. Oyun sırasında hücrelere tıklayarak kartları takip et
 4. Bir şüpheli, silah veya oda kesin olarak elendiyse ismine tıkla — satırın üstü çizilir
 5. Sıfırlamak için en alttaki butonu kullan
+
+Kurulum
+İndirip tarayıcıda aç. Başka bir şey gerekmez.
